@@ -14,6 +14,10 @@ export const homePage = async (req, res) => {
       const endOfDay = new Date();
       endOfDay.setHours(23, 59, 59, 999);
 
+      const now = new Date();
+      const currentMonth = now.toLocaleString('default', { month: 'long' }).toLowerCase();
+      const currentYear = now.getFullYear().toString();
+
       const menu = await Menu.findOne({
         meals: {
           $elemMatch: {
@@ -27,26 +31,41 @@ export const homePage = async (req, res) => {
  
     if (!menu) {
       return res.render('index', {
-        mealInfo: null,
+        meals: [],
         noMealToday: true
       });
     }
     
-    const todaysMeal = menu.meals.find(m =>
-      m.date >= startOfDay && m.date <= endOfDay
-    )
+    // Check both meals1 and meals2 for today's date
+    const todaysMeal1 = menu.meals1.find(m =>
+      new Date(m.date) >= startOfDay && new Date(m.date) <= endOfDay
+    );
+    
+    const todaysMeal2 = menu.meals2.find(m =>
+      new Date(m.date) >= startOfDay && new Date(m.date) <= endOfDay
+    );
 
-    const mealInfo = todaysMeal.meal;
+    // Collect both meals if they exist
+    const meals = [];
+    if (todaysMeal1?.meal) meals.push(todaysMeal1.meal);
+    if (todaysMeal2?.meal) meals.push(todaysMeal2.meal);
+
+    if (meals.length === 0) {
+      return res.render('index', {
+        meals: [],
+        noMealToday: true
+      });
+    }
 
     res.render('index', {
-      mealInfo,
+      meals,
       noMealToday: false
     })
     }
     catch (err) {
         console.log(err)
         res.render('index', {
-          mealInfo: null,
+          meals: [],
           noMealToday: true,
           error: err.message
         })
